@@ -1,0 +1,15 @@
+# Imposta conversione automatica degli end-of-line
+* text=auto
+
+# File di codice e testo → sempre con line feed LF (coerente con Unix/macOS)
+*.py text eol=lf
+*.ipynb text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+
+# File binari → non toccare
+*.png binary
+*.jpg binary
+*.pdf binary
+*.zip binary
+*.exe binary
