@@ -8,8 +8,8 @@ L’obiettivo è consolidare i concetti di programmazione Python applicati all�
 
 ## 📂 Struttura della Repository
 > Ogni directory contiene i materiali relativi al capitolo corrispondente:  
-> - notebook `.ipynb` con esercizi e dimostrazioni  
-> - eventuali note in formato `.md` o `.txt`
+> Notebook `.ipynb` con esercizi e dimostrazioni  
+> Eventuali note in formato `.md` o `.txt`
 
 
 
@@ -37,4 +37,5 @@ L’obiettivo è consolidare i concetti di programmazione Python applicati all�
 📍 *Repository educativa ad uso personale e di approfondimento accademico.*
 
 ---
+
 
