@@ -1,0 +1,14 @@
+# File di sistema
+.DS_Store
+Thumbs.db
+
+# Cartelle di notebook
+.ipynb_checkpoints/
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# File temporanei
+*.tmp
+*.log
