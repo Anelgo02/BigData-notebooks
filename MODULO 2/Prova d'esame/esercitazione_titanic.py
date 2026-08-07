@@ -75,6 +75,18 @@ embarked_mode = m.iloc[0] if not m.empty else 'S'
 train_df['Embarked'] = train_df['Embarked'].fillna(embarked_mode) 
 val_df['Embarked'] = val_df['Embarked'].fillna(embarked_mode) 
 
+# 3. Imputazione `Fare` con la mediana del prezzo per quella `Pclass`
+# esercizio non necessario perchè Fare non ha missing values 
+
+fare_medians = train_df.groupby(['Pclass'])['Fare'].median()
+
+def impute_fare(row, medians):
+    if pd.isna(row['Fare']):
+        return medians.loc[row['Pclass']]
+    return row['Fare']
+
+train_df['Fare'] = train_df.apply(lambda r: impute_fare(r, fare_medians), axis=1)
+val_df['Fare'] = val_df.apply(lambda r: impute_fare(r, fare_medians), axis=1)
 
 # ======== ENCODING ==========
 
@@ -177,4 +189,52 @@ selected_mask = selector.get_support()
 selected_features = [f for f,m in zip(feature_cols, selected_mask) if m]
 print(selected_features)
 
-# %%
+# %% Quesito 2: SVM con grid search su kernel RBF e polinomiale 
+
+import numpy as np
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
+
+# Filtro sulle sole features selezionate nel Quesito 1 
+X_train_selected = X_train[selected_features]
+X_val_selected = X_val[selected_features]
+
+n_samples = X_train_selected.shape[0]
+
+# C=1 -> regolarizzazione standard
+# C=1/sqrt(n_samples) -> regolarizzazione più forte, margine più largo, penalizza meno gli errori
+C_values = [1, 1 / np.sqrt(n_samples)]
+
+param_grid = [
+    {
+        'kernel':['rbf'],
+        'C':C_values,
+        'gamma':['scale']
+    },
+    {
+        'kernel': ['poly'],
+        'degree':[3,4],
+        'C': C_values,
+        'gamma':['scale']
+    }
+]
+
+svm = SVC(random_state=42)
+
+grid_search = GridSearchCV(
+    estimator=svm,
+    param_grid=param_grid,
+    cv=5,
+    scoring='accuracy',
+    n_jobs=1
+)
+
+grid_search.fit(X_train_selected,y_train)
+
+print("Migliori parametri:", grid_search.best_params_)
+print("Miglior accuracy in CV:", grid_search.best_score_)
+
+# Valutazione sul validation set col modello migliore 
+best_svm = grid_search.best_estimator_
+val_accuracy = best_svm.score(X_val_selected, y_val)
+print("Accuracy sul validation set:", val_accuracy)

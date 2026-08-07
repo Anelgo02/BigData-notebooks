@@ -1,0 +1,23 @@
+1) 8 Punti:
+Importare da Keras dataset CIFAR10, composto da 50.000 immagini di train e 10.000 immagini di test. Le immagini appartengono ad 1 di 10 classi. 
+Fare lo split del 10% per estrapolare il validation set.
+Fate data augmentation con mirroring verticale e orizzontale, traslazioni e rotazioni casuali di +-5 pixel e +-10°.
+
+2) 8 Punti:
+Addestrare un classificatore Gradient Boost con diversi parametri:
+n_estimators: [20, 50, 100]
+LR: [0.001, 0.01, 0.02]
+min_samples_leaf: [30, 40, 50]
+Ricavare l'accuracy sul train e sul test
+
+3) 10 Punti:
+Implementare una rete Convoluzionale 2D con un opportuno numero di layer convoluzionali e un opportuno numero di layer densi. Usare callbacks di EarlyStopping e ModelCheckpoint, salvando solamente il miglior modello, utilizzando un min_delta=0.01 e patience=5. Usare l'SGD con decadimento del learning rate esponenziale. Salvare tuttee loss ottenute sul trai durante l'addestramento.
+
+4) 4 Punti:
+Confrontare i risultati ottenuti dai due modelli:
+- Grafico Loss durante il train
+- Accuracy sul train
+- Accuracy sul test
+- Stampare Curva ROC 'one-versus-rest'
+- Stampare AUC score 'one-versus-rest'
+- Confusion Matrix
