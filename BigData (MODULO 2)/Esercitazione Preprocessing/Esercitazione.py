@@ -137,7 +137,7 @@ import seaborn as sns
 
 
 # 1. Matrice di correlazione
-corr_matrix = X_train_processed.corr().abs()
+corr_matrix = X_train_s.corr().abs()
 
 plt.figure(figsize=(14,10))
 sns.heatmap(
@@ -163,10 +163,33 @@ to_drop = [column for column in upper_tri.columns if any(upper_tri[column] > thr
 print(f"Feature fortemente correlate da rimuovere (soglia > {threshold}):", to_drop)
 
 # 4. Drop delle feature collineari sia da train che da test
-X_train_processed = X_train_processed.drop(columns=to_drop)
-X_test_processed = X_test_processed.drop(columns=to_drop)
+X_train_s = X_train_s.drop(columns=to_drop)
+X_test_s = X_test_s.drop(columns=to_drop)
 
-print("Nuovo numero di feature dopo il drop multicollineare:", X_train_processed.shape[1])
+print("Nuovo numero di feature dopo il drop multicollineare:", X_train_s.shape[1])
 
 # %% FEATURE SELECTION
 
+from sklearn.feature_selection import SelectFromModel
+from sklearn.ensemble import RandomForestClassifier
+
+# 1. Istanziamo il selettore per estrarre le top-k feature più informative (es. k=10)
+selector = SelectFromModel(RandomForestClassifier(n_estimators=200, random_state=42))
+selector.set_output(transform='pandas')
+
+X_train_final = selector.fit_transform(X_train_s, y_train)
+X_test_final = selector.transform(X_test_s)
+
+# Visualizzazione delle feature selezionate e dei rispettivi F-scores
+selected_features = list(X_train_final.columns)
+scores = pd.Series(
+    selector.estimator_.feature_importances_,
+    index=X_train_s.columns
+    ).sort_values(ascending=False
+)
+
+print("Features selezionate", selected_features)
+print(scores.head(10))
+
+
+# %%
