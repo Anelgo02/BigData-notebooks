@@ -129,67 +129,67 @@ X_test_s[cont_cols] = scaler.transform(X_test_processed[cont_cols])
 print(X_train_s[cont_cols].mean().round(3))
 print(X_train_s[cont_cols].std().round(3))
 
-
-# %% ANALISI DELLE FEATURES MULTICOLLINEARI
-
+# %% MULTICOLLINEARITÀ
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
-# 1. Matrice di correlazione
 corr_matrix = X_train_s.corr().abs()
 
-plt.figure(figsize=(14,10))
-sns.heatmap(
-    corr_matrix,
-    annot=True,
-    cmap='coolwarm',
-    vmin=-1, vmax=1,
-    linewidths=0.5
-)
+plt.figure(figsize=(12, 10))
+sns.heatmap(corr_matrix, annot=False, cmap='Reds', vmin=0, vmax=1,
+            square=True, linewidths=0.3)
+plt.title("Matrice di correlazione (|r|) — training set")
+plt.tight_layout(); plt.show()
 
-plt.title("Matrice di correlazione tra le features (POST-PROCESSING)")
-plt.tight_layout()
-plt.show()
-
-# 2. Prendiamo il triangolo superiore per evitare duplicati
 upper_tri = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
 
-# 3. Individuazione delle features con corr > 0.85
-
 threshold = 0.85
-to_drop = [column for column in upper_tri.columns if any(upper_tri[column] > threshold)]
+coppie = [(i, j, upper_tri.loc[i, j])
+          for i in upper_tri.index for j in upper_tri.columns
+          if pd.notna(upper_tri.loc[i, j]) and upper_tri.loc[i, j] > threshold]
+print(f"Coppie con |r| > {threshold}:")
+for a, b, v in sorted(coppie, key=lambda t: -t[2]):
+    print(f"  {a:35s} — {b:35s}  r={v:.3f}")
 
-print(f"Feature fortemente correlate da rimuovere (soglia > {threshold}):", to_drop)
+# NOTA: Pearson è bivariata: non intercetta la dipendenza lineare residua dei
+# gruppi one-hot multi-classe, che sommano a 1 per riga. Con un modello lineare
+# non regolarizzato servirebbe drop='first' o un'analisi VIF.
 
-# 4. Drop delle feature collineari sia da train che da test
-X_train_s = X_train_s.drop(columns=to_drop)
-X_test_s = X_test_s.drop(columns=to_drop)
+to_drop = [c for c in upper_tri.columns if any(upper_tri[c] > threshold)]
+print("\nRimosse:", to_drop)
 
-print("Nuovo numero di feature dopo il drop multicollineare:", X_train_s.shape[1])
+X_train_nc = X_train_s.drop(columns=to_drop)   # nomi nuovi: cella ri-eseguibile
+X_test_nc  = X_test_s.drop(columns=to_drop)
+print("Feature residue:", X_train_nc.shape[1])
 
-# %% FEATURE SELECTION
-
+# %% FEATURE SELECTION — EMBEDDED (RandomForest, importanze MDI)
 from sklearn.feature_selection import SelectFromModel
 from sklearn.ensemble import RandomForestClassifier
 
-# 1. Istanziamo il selettore per estrarre le top-k feature più informative (es. k=10)
-selector = SelectFromModel(RandomForestClassifier(n_estimators=200, random_state=42))
+# Binarizzazione: le classi 3 (75) e 4 (21) sono troppo rare per una
+# selezione supervisionata stabile sul multiclasse.
+y_train_bin = (y_train > 0).astype(int)
+y_test_bin  = (y_test  > 0).astype(int)
+
+# EMBEDDED: la selezione è un sottoprodotto di un singolo training.
+# threshold='mean' (default) tiene le feature con importanza > media.
+selector = SelectFromModel(
+    RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1)
+)
 selector.set_output(transform='pandas')
 
-X_train_final = selector.fit_transform(X_train_s, y_train)
-X_test_final = selector.transform(X_test_s)
+X_train_final = selector.fit_transform(X_train_nc, y_train_bin)
+X_test_final  = selector.transform(X_test_nc)
 
-# Visualizzazione delle feature selezionate e dei rispettivi F-scores
-selected_features = list(X_train_final.columns)
-scores = pd.Series(
-    selector.estimator_.feature_importances_,
-    index=X_train_s.columns
-    ).sort_values(ascending=False
-)
+scores = pd.Series(selector.estimator_.feature_importances_,
+                   index=X_train_nc.columns).sort_values(ascending=False)
 
-print("Features selezionate", selected_features)
-print(scores.head(10))
+print(f"Selezionate {X_train_final.shape[1]}/{X_train_nc.shape[1]}:")
+print(list(X_train_final.columns))
+print("\nRanking importanze (MDI):")
+print(scores.round(4))
+# NOTA: MDI favorisce le feature ad alta cardinalità (le continue hanno più
+# split candidati delle dummy binarie). permutation_importance sarebbe meno
+# distorto, al costo di N ri-valutazioni del modello.
 
-
-# %%
+print("\nColonne train==test:", list(X_train_final.columns) == list(X_test_final.columns))
