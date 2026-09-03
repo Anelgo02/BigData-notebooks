@@ -273,6 +273,11 @@ def train_test(model,
     num_batches = len(train_dataloader.batch_sampler) # il campionatore dei batch del dataloader ha il protocollo 
                                                       # __len__ e può fornirci il numero dei batch campionabili
 
+    best_val_loss = float('inf')
+    best_model_state = None
+
+    import copy # per salvare il modello migliore
+
     # Ciclo di addestramento con early stopping
     for epoch in range(1,epochs+1):
 
@@ -287,6 +292,11 @@ def train_test(model,
         if val_dataloader != None:
                 epoch_validate_loss, _, _ = eval_loop(model, val_dataloader, device, loss_fn=test_loss_fn, metrics=metrics, average=average)
                 validation_loss.append(epoch_validate_loss)
+
+        if val_dataloader is not None and epoch_validate_loss < best_val_loss:
+            best_val_loss = epoch_validate_loss
+            best_model_state = copy.deepcopy(model.state_dict())
+            
 
         # test 
         epoch_test_loss, epoch_accuracy, epoch_metrics = eval_loop(model, test_dataloader, device, loss_fn=test_loss_fn, metrics=metrics, average=average)
@@ -316,6 +326,9 @@ def train_test(model,
         if scheduler != None:
             scheduler.step()
 
+    # Nel caso in cui abbiamo salvato un best_model lo carichiamo così sarà quello salvato
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
     return train_loss, validation_loss, test_loss, accuracy, test_metrics
 
 def save_model(net, optimizer, current_epoch, train_loss, val_loss, test_loss, accuracy, metrics, path):
