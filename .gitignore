@@ -12,3 +12,5 @@ __pycache__/
 # File temporanei
 *.tmp
 *.log
+
+Cifar10/data/*
