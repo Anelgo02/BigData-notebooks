@@ -274,10 +274,7 @@ def train_test(model,
                                                       # __len__ e può fornirci il numero dei batch campionabili
 
     best_val_loss = float('inf')
-    best_val_acc=0.0
     best_model_state = None
-
-    import copy # per salvare il modello migliore
 
     # Ciclo di addestramento con early stopping
     for epoch in range(1,epochs+1):
@@ -291,17 +288,15 @@ def train_test(model,
 
         # validation se è presente val_dataloader
         if val_dataloader != None:
-                epoch_validate_loss, epoch_val_acc, _ = eval_loop(model, val_dataloader, device, loss_fn=test_loss_fn, metrics=metrics, average=average)
+                epoch_validate_loss, _, _ = eval_loop(model, val_dataloader, device, loss_fn=test_loss_fn, metrics=metrics, average=average)
                 validation_loss.append(epoch_validate_loss)
 
-        """if val_dataloader is not None and epoch_validate_loss < best_val_loss:
-            best_val_loss = epoch_validate_loss
-            best_model_state = copy.deepcopy(model.state_dict())"""
+        import copy 
 
-        if epoch_val_acc > best_val_acc:
-            best_val_acc = epoch_val_acc
+        if epoch_validate_loss < best_val_loss and val_dataloader != None:
+            best_val_loss = epoch_validate_loss
             best_model_state = copy.deepcopy(model.state_dict())
-            print(f"  >> checkpoint salvato: epoca {epoch}, val acc {epoch_val_acc:.4f}")  # <-- CAMBIATO
+
 
             
 
